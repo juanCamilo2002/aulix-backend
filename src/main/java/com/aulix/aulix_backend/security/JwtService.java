@@ -1,0 +1,99 @@
+package com.aulix.aulix_backend.security;
+
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
+@Slf4j
+@Service
+public class JwtService {
+    @Value("${app.jwt.secret}")
+    private String secret;
+
+    @Value("${app.jwt.expiration-ms}")
+    private long expirationMs;
+
+    @Value("${app.jwt.refresh-expiration-ms}")
+    private long refreshExpirationMs;
+
+    //  Generation
+
+    public String generateToken(UserDetails userDetails, String tenantSlug) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("tenantSlug", tenantSlug);
+        return buildToken(claims, userDetails.getUsername(), expirationMs);
+    }
+
+    public String generateRefreshToken(UserDetails userDetails, String tenantSlug) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("tenantSlug", tenantSlug);
+        claims.put("type", "refresh");
+        return buildToken(claims, userDetails.getUsername(), refreshExpirationMs);
+    }
+
+    private String buildToken(Map<String, Object> claims,
+                              String subject,
+                              long expiration) {
+        return Jwts.builder()
+                .claims(claims)
+                .subject(subject)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSigninKey())
+                .compact();
+    }
+
+    //  Extraction
+
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractTenantSlug(String token) {
+        return extractClaim(token, claims -> claims.get("tenantSlug", String.class));
+    }
+
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    //  Validation
+
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        String username = extractUsername(token);
+        return username.equals(userDetails.getUsername()) && !isTokenEXpired(token);
+    }
+
+    public boolean isTokenEXpired(String token) {
+        return extractClaim(token, Claims::getExpiration).before(new Date());
+    }
+
+    // Internal
+
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigninKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    private SecretKey getSigninKey() {
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+}
+
