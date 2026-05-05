@@ -81,8 +81,12 @@ public class EnrollmentService {
                 .findByUserIdAndCourseId(user.getId(), courseId)
                 .orElseThrow(() -> AulixException.forbidden("No estÃ¡s matriculado en este curso"));
 
-        Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> AulixException.notFound("LecciÃ³n no encontrada"));
+Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> AulixException.notFound("Lección no encontrada"));
+
+        if (!lesson.getModule().getCourse().getId().equals(courseId)) {
+            throw AulixException.badRequest("La lección no pertenece a este curso");
+        }
 
         LessonProgress progress = progressRepository
                 .findByEnrollmentIdAndLessonId(enrollment.getId(), lessonId)

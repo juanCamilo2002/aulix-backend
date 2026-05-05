@@ -37,6 +37,11 @@ public class CourseService {
     public CourseResponse getCourseBySlug(String slug) {
         Course course = courseRepository.findBySlug(slug)
                 .orElseThrow(() -> AulixException.notFound("Curso no encontrado: " + slug));
+
+        if (!course.isPublished()) {
+            return toResponse(course);
+        }
+
         return toFullResponse(course);
     }
 
