@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Slf4j
@@ -42,9 +43,14 @@ public class JwtService {
     }
 
     public String generateRefreshToken(UserDetails userDetails, String tenantSlug) {
+        return generateRefreshToken(userDetails, tenantSlug, UUID.randomUUID().toString());
+    }
+
+    public String generateRefreshToken(UserDetails userDetails, String tenantSlug, String tokenId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("tenantSlug", tenantSlug);
         claims.put(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE);
+        claims.put("jti", tokenId);
         return buildToken(claims, userDetails.getUsername(), refreshExpirationMs);
     }
 
@@ -74,6 +80,14 @@ public class JwtService {
         return extractClaim(token, claims -> claims.get(TOKEN_TYPE_CLAIM, String.class));
     }
 
+    public String extractTokenId(String token) {
+        return extractClaim(token, Claims::getId);
+    }
+
+    public Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -94,8 +108,16 @@ public class JwtService {
         return isAccessToken(token) && isTokenValid(token, userDetails);
     }
 
+    public boolean isRefreshToken(String token) {
+        return REFRESH_TOKEN_TYPE.equals(extractTokenType(token));
+    }
+
+    public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
+        return isRefreshToken(token) && isTokenValid(token, userDetails);
+    }
+
     public boolean isTokenEXpired(String token) {
-        return extractClaim(token, Claims::getExpiration).before(new Date());
+        return extractExpiration(token).before(new Date());
     }
 
     // Internal
