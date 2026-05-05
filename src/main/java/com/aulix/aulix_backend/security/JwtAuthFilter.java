@@ -2,6 +2,7 @@ package com.aulix.aulix_backend.security;
 
 import com.aulix.aulix_backend.security.auth.AuthService;
 import com.aulix.aulix_backend.tenant.TenantContext;
+import com.aulix.aulix_backend.tenant.TenantResolver;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +26,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final AuthService authService;
+    private final TenantResolver tenantResolver;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -49,10 +51,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             String username = jwtService.extractUsername(token);
             String tenantSlug = jwtService.extractTenantSlug(token);
+            String requestTenant = tenantResolver.resolveTenant(request);
 
-            if (tenantSlug != null) {
-                TenantContext.setTenant(tenantSlug);
+            if (!requestTenant.equals(tenantSlug)) {
+                log.warn("Tenant JWT no coincide con request: token={}, request={}", tenantSlug, requestTenant);
+                filterChain.doFilter(request, response);
+                return;
             }
+
+            TenantContext.setTenant(requestTenant);
 
             if (username != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -66,7 +73,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     authToken.setDetails(
                             new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("Usuario autenticado: {} en tenant: {}", username, tenantSlug);
+                    log.debug("Usuario autenticado: {} en tenant: {}", username, requestTenant);
                 }
             }
         } catch (Exception e) {
