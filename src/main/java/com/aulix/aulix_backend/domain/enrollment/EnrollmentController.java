@@ -2,6 +2,7 @@ package com.aulix.aulix_backend.domain.enrollment;
 
 import com.aulix.aulix_backend.domain.enrollment.dto.*;
 import com.aulix.aulix_backend.shared.dto.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
