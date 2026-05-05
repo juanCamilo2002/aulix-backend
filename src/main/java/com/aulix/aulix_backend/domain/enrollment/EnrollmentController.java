@@ -36,7 +36,7 @@ public class EnrollmentController {
     public ResponseEntity<ApiResponse<ProgressResponse>> updateProgress(
             @PathVariable UUID courseId,
             @PathVariable UUID lessonId,
-            @RequestBody ProgressUpdateRequest request) {
+            @Valid @RequestBody ProgressUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(
                 enrollmentService.updateProgress(courseId, lessonId, request)));
     }
