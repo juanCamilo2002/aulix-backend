@@ -106,7 +106,15 @@ public class AuthService implements UserDetailsService {
 
     @Transactional
     public AuthResponse refresh(RefreshTokenRequest request) {
-        String token = request.getRefreshToken();
+        return refresh(request.getRefreshToken());
+    }
+
+    @Transactional
+    public AuthResponse refresh(String token) {
+        if (token == null || token.isBlank()) {
+            throw AulixException.unauthorized("Refresh token inválido");
+        }
+
         String tenant = TenantContext.getTenant();
 
         User user = getUserFromRefreshToken(token, tenant);
@@ -135,7 +143,16 @@ public class AuthService implements UserDetailsService {
 
     @Transactional
     public void logout(RefreshTokenRequest request) {
-        String tokenHash = hashToken(request.getRefreshToken());
+        logout(request.getRefreshToken());
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return;
+        }
+
+        String tokenHash = hashToken(refreshToken);
 
         refreshTokenRepository.findByTokenHash(tokenHash)
                 .filter(token -> !token.isRevoked())
