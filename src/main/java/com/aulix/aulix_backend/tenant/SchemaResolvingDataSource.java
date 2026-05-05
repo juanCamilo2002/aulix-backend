@@ -29,12 +29,18 @@ public class SchemaResolvingDataSource extends DelegatingDataSource {
         return conn;
     }
 
-    private void applySchema(Connection conn) throws SQLException {
+private void applySchema(Connection conn) throws SQLException {
         String tenant = TenantContext.getTenant();
 
-        if (tenant == null || tenant.isBlank()) {
-            return;
+        String schema = (tenant == null || tenant.isBlank())
+                ? "public"
+                : tenant.replaceAll("[^a-z0-9_]", "");
+
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("SET search_path TO " + schema + ", public");
+            log.debug("search_path seteado a: {}, public", schema);
         }
+    }
 
         // Defensive sanitization â€” although TenantInterceptor already does it
         String schema = tenant.replaceAll("[^a-z0-9_]", "");
