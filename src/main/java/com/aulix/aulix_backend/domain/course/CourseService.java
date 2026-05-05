@@ -2,6 +2,7 @@ package com.aulix.aulix_backend.domain.course;
 
 
 import com.aulix.aulix_backend.domain.course.dto.*;
+import com.aulix.aulix_backend.domain.user.Role;
 import com.aulix.aulix_backend.domain.user.User;
 import com.aulix.aulix_backend.domain.user.UserRepository;
 import com.aulix.aulix_backend.shared.exception.AulixException;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class CourseService {
 
     private final CourseRepository courseRepository;
+    private final ModuleRepository moduleRepository;
     private final UserRepository userRepository;
 
     //  List published courses
@@ -128,6 +130,9 @@ public class CourseService {
                 .orElseThrow(() -> AulixException.notFound("Curso no encontrado"));
 
         User current = getCurrentUser();
+        if (current.getRole() == Role.ADMIN) {
+            return course;
+        }
         if (!course.getInstructor().getId().equals(current.getId())) {
             throw AulixException.forbidden("No tienes permiso para modificar este curso");
         }
@@ -135,10 +140,7 @@ public class CourseService {
     }
 
     private Module findModule(UUID moduleId) {
-        return courseRepository.findAll().stream()
-                .flatMap(c -> c.getModules().stream())
-                .filter(m -> m.getId().equals(moduleId))
-                .findFirst()
+        return moduleRepository.findById(moduleId)
                 .orElseThrow(() -> AulixException.notFound("Módulo no encontrado"));
     }
 
