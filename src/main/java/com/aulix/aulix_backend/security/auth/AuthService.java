@@ -62,7 +62,11 @@ public class AuthService implements UserDetailsService {
         String tenant = TenantContext.getTenant();
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> AulixException.notFound("Usuario no encontrado"));
+                .orElseThrow(() -> AulixException.unauthorized("Credenciales inválidas"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw AulixException.unauthorized("Credenciales inválidas");
+        }
 
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
