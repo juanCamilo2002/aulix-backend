@@ -41,6 +41,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
             String token = authHeader.substring(7);
+
+            if (!jwtService.isAccessToken(token)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             String username = jwtService.extractUsername(token);
             String tenantSlug = jwtService.extractTenantSlug(token);
 
@@ -53,7 +59,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 UserDetails userDetails = authService.loadUserByUsername(username);
 
-                if (jwtService.isTokenValid(token, userDetails)) {
+                if (jwtService.isAccessTokenValid(token, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails, null, userDetails.getAuthorities());

@@ -19,6 +19,10 @@ import java.util.function.Function;
 @Slf4j
 @Service
 public class JwtService {
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
+
     @Value("${app.jwt.secret}")
     private String secret;
 
@@ -33,13 +37,14 @@ public class JwtService {
     public String generateToken(UserDetails userDetails, String tenantSlug) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("tenantSlug", tenantSlug);
+        claims.put(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE);
         return buildToken(claims, userDetails.getUsername(), expirationMs);
     }
 
     public String generateRefreshToken(UserDetails userDetails, String tenantSlug) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("tenantSlug", tenantSlug);
-        claims.put("type", "refresh");
+        claims.put(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE);
         return buildToken(claims, userDetails.getUsername(), refreshExpirationMs);
     }
 
@@ -65,6 +70,10 @@ public class JwtService {
         return extractClaim(token, claims -> claims.get("tenantSlug", String.class));
     }
 
+    public String extractTokenType(String token) {
+        return extractClaim(token, claims -> claims.get(TOKEN_TYPE_CLAIM, String.class));
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -75,6 +84,14 @@ public class JwtService {
     public boolean isTokenValid(String token, UserDetails userDetails) {
         String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenEXpired(token);
+    }
+
+    public boolean isAccessToken(String token) {
+        return ACCESS_TOKEN_TYPE.equals(extractTokenType(token));
+    }
+
+    public boolean isAccessTokenValid(String token, UserDetails userDetails) {
+        return isAccessToken(token) && isTokenValid(token, userDetails);
     }
 
     public boolean isTokenEXpired(String token) {
