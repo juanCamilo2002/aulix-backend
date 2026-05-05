@@ -1,4 +1,4 @@
-﻿package com.aulix.aulix_backend;
+package com.aulix.aulix_backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
