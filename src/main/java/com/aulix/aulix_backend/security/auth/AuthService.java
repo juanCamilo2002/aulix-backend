@@ -60,6 +60,7 @@ public class AuthService implements UserDetailsService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
                 .role(Role.STUDENT)
+                .passwordChangedAt(LocalDateTime.now())
                 .build();
 
         userRepository.save(user);
@@ -77,6 +78,8 @@ public class AuthService implements UserDetailsService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw AulixException.unauthorized("Credenciales inválidas");
         }
+
+        ensureUserCanAuthenticate(user);
 
         user.setLastLogin(LocalDateTime.now());
         userRepository.save(user);
@@ -98,6 +101,7 @@ public class AuthService implements UserDetailsService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
                 .role(role)
+                .passwordChangedAt(LocalDateTime.now())
                 .build();
 
         userRepository.save(user);
@@ -202,6 +206,8 @@ public class AuthService implements UserDetailsService {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> AulixException.unauthorized("Refresh token inválido"));
 
+            ensureUserCanAuthenticate(user);
+
             if (!jwtService.isRefreshTokenValid(token, user)) {
                 throw AulixException.unauthorized("Refresh token inválido");
             }
@@ -221,6 +227,12 @@ public class AuthService implements UserDetailsService {
                 .user(user)
                 .expiresAt(toLocalDateTime(jwtService.extractExpiration(token)))
                 .build());
+    }
+
+    private void ensureUserCanAuthenticate(User user) {
+        if (!user.isEnabled() || !user.isAccountNonLocked()) {
+            throw AulixException.unauthorized("Cuenta no disponible");
+        }
     }
 
     private void revokeToken(RefreshToken token, String replacedByTokenId) {
