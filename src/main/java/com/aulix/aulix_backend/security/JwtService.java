@@ -109,7 +109,15 @@ public class JwtService {
     }
 
     private SecretKey getSigninKey() {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT_SECRET is required");
+        }
+
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException("JWT_SECRET must be at least 32 bytes");
+        }
+
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }
