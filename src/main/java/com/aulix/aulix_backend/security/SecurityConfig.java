@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Bean;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final AuthCsrfFilter authCsrfFilter;
     private final AuthRateLimitFilter authRateLimitFilter;
     private final AuthenticationProvider authenticationProvider;
 
@@ -41,6 +42,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider)
+                .addFilterBefore(authCsrfFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -2,6 +2,7 @@ package com.aulix.aulix_backend.security.auth;
 
 import com.aulix.aulix_backend.domain.user.Role;
 import com.aulix.aulix_backend.domain.user.User;
+import com.aulix.aulix_backend.security.AuthCsrfFilter;
 import com.aulix.aulix_backend.security.auth.dto.AuthResponse;
 import com.aulix.aulix_backend.security.auth.dto.CurrentUserResponse;
 import com.aulix.aulix_backend.security.auth.dto.LoginRequest;
@@ -18,6 +19,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.security.SecureRandom;
+import java.util.Base64;
 
 @RestController
 @RequestMapping("/auth")
@@ -25,6 +28,7 @@ import java.time.Duration;
 public class AuthController {
     private static final String ACCESS_TOKEN_COOKIE = "accessToken";
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final AuthService authService;
 
@@ -83,7 +87,9 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<CurrentUserResponse>> me(
             @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(ApiResponse.ok(authService.me(user)));
+        return ResponseEntity.ok()
+                .headers(csrfCookie())
+                .body(ApiResponse.ok(authService.me(user)));
     }
 
     private ResponseEntity<ApiResponse<AuthResponse>> authResponse(String message, AuthResponse response) {
@@ -100,29 +106,53 @@ public class AuthController {
         headers.add(HttpHeaders.SET_COOKIE, buildCookie(
                 ACCESS_TOKEN_COOKIE,
                 accessToken,
-                Duration.ofMillis(accessTokenExpirationMs)).toString());
+                Duration.ofMillis(accessTokenExpirationMs),
+                true).toString());
         headers.add(HttpHeaders.SET_COOKIE, buildCookie(
                 REFRESH_TOKEN_COOKIE,
                 refreshToken,
-                Duration.ofMillis(refreshTokenExpirationMs)).toString());
+                Duration.ofMillis(refreshTokenExpirationMs),
+                true).toString());
+        headers.add(HttpHeaders.SET_COOKIE, buildCookie(
+                AuthCsrfFilter.CSRF_COOKIE,
+                csrfToken(),
+                Duration.ofMillis(refreshTokenExpirationMs),
+                false).toString());
         return headers;
     }
 
     private HttpHeaders clearAuthCookies() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.SET_COOKIE, buildCookie(ACCESS_TOKEN_COOKIE, "", Duration.ZERO).toString());
-        headers.add(HttpHeaders.SET_COOKIE, buildCookie(REFRESH_TOKEN_COOKIE, "", Duration.ZERO).toString());
+        headers.add(HttpHeaders.SET_COOKIE, buildCookie(ACCESS_TOKEN_COOKIE, "", Duration.ZERO, true).toString());
+        headers.add(HttpHeaders.SET_COOKIE, buildCookie(REFRESH_TOKEN_COOKIE, "", Duration.ZERO, true).toString());
+        headers.add(HttpHeaders.SET_COOKIE, buildCookie(AuthCsrfFilter.CSRF_COOKIE, "", Duration.ZERO, false).toString());
         return headers;
     }
 
-    private ResponseCookie buildCookie(String name, String value, Duration maxAge) {
+    private HttpHeaders csrfCookie() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.SET_COOKIE, buildCookie(
+                AuthCsrfFilter.CSRF_COOKIE,
+                csrfToken(),
+                Duration.ofMillis(refreshTokenExpirationMs),
+                false).toString());
+        return headers;
+    }
+
+    private ResponseCookie buildCookie(String name, String value, Duration maxAge, boolean httpOnly) {
         return ResponseCookie.from(name, value)
-                .httpOnly(true)
+                .httpOnly(httpOnly)
                 .secure(secureCookies)
                 .sameSite(sameSite)
                 .path("/")
                 .maxAge(maxAge)
                 .build();
+    }
+
+    private String csrfToken() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private void stripTokens(AuthResponse response) {
