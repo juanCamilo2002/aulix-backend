@@ -39,6 +39,9 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     @Value("${app.auth.rate-limit.window-seconds:60}")
     private long windowSeconds;
 
+    @Value("${app.auth.rate-limit.trust-forwarded-headers:false}")
+    private boolean trustForwardedHeaders;
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
@@ -80,7 +83,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
 
     private String clientIp(HttpServletRequest request) {
         String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
+        if (trustForwardedHeaders && forwardedFor != null && !forwardedFor.isBlank()) {
             return forwardedFor.split(",")[0].trim();
         }
 

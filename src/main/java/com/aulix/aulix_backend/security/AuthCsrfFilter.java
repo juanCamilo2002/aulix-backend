@@ -24,6 +24,10 @@ public class AuthCsrfFilter extends OncePerRequestFilter {
     public static final String CSRF_HEADER = "X-CSRF-Token";
 
     private static final Set<String> MUTATING_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
+    private static final Set<String> CSRF_EXEMPT_PATHS = Set.of(
+            "/auth/login",
+            "/auth/register"
+    );
     private static final String ACCESS_TOKEN_COOKIE = "accessToken";
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
 
@@ -54,6 +58,7 @@ public class AuthCsrfFilter extends OncePerRequestFilter {
     private boolean shouldValidate(HttpServletRequest request) {
         return enabled
                 && MUTATING_METHODS.contains(request.getMethod().toUpperCase())
+                && !CSRF_EXEMPT_PATHS.contains(request.getServletPath())
                 && (cookieValue(request, ACCESS_TOKEN_COOKIE) != null
                 || cookieValue(request, REFRESH_TOKEN_COOKIE) != null);
     }

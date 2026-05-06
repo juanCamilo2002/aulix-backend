@@ -60,4 +60,31 @@ class AuthCsrfFilterTest {
 
         assertThat(response.getStatus()).isEqualTo(200);
     }
+
+    @Test
+    void doesNotRequireCsrfForLoginEvenWithStaleAuthCookies() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/login");
+        request.setServletPath("/auth/login");
+        request.setCookies(
+                new Cookie("accessToken", "stale-access-token"),
+                new Cookie("refreshToken", "stale-refresh-token")
+        );
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void stillRequiresCsrfForRefreshWithRefreshCookie() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/auth/refresh");
+        request.setServletPath("/auth/refresh");
+        request.setCookies(new Cookie("refreshToken", "refresh-token"));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(403);
+    }
 }
