@@ -29,6 +29,12 @@ public class CourseController {
         return ResponseEntity.ok(ApiResponse.ok(courseService.getCourseBySlug(slug)));
     }
 
+    @GetMapping("/{slug}/content")
+    @PreAuthorize("hasAnyRole('STUDENT', 'INSTRUCTOR', 'ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<ApiResponse<CourseResponse>> getContentBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(ApiResponse.ok(courseService.getCourseContentBySlug(slug)));
+    }
+
     // Instructors and admins only
     @PostMapping
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")

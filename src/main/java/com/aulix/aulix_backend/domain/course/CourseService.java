@@ -2,6 +2,7 @@ package com.aulix.aulix_backend.domain.course;
 
 
 import com.aulix.aulix_backend.domain.course.dto.*;
+import com.aulix.aulix_backend.domain.enrollment.EnrollmentRepository;
 import com.aulix.aulix_backend.domain.user.Role;
 import com.aulix.aulix_backend.domain.user.User;
 import com.aulix.aulix_backend.domain.user.UserRepository;
@@ -23,6 +24,7 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
     private final ModuleRepository moduleRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
 
     //  List published courses
@@ -41,7 +43,20 @@ public class CourseService {
                 .orElseThrow(() -> AulixException.notFound("Curso no encontrado: " + slug));
 
         if (!course.isPublished()) {
-            return toResponse(course);
+            throw AulixException.notFound("Curso no encontrado: " + slug);
+        }
+
+        return toPublicDetailResponse(course);
+    }
+
+    @Transactional(readOnly = true)
+    public CourseResponse getCourseContentBySlug(String slug) {
+        Course course = courseRepository.findBySlug(slug)
+                .orElseThrow(() -> AulixException.notFound("Curso no encontrado: " + slug));
+
+        User current = getCurrentUser();
+        if (!canAccessCourseContent(current, course)) {
+            throw AulixException.forbidden("No tienes acceso al contenido de este curso");
         }
 
         return toFullResponse(course);
@@ -151,6 +166,16 @@ public class CourseService {
                 .orElseThrow(() -> AulixException.notFound("Usuario no encontrado"));
     }
 
+    private boolean canAccessCourseContent(User user, Course course) {
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPERADMIN) {
+            return true;
+        }
+        if (course.getInstructor().getId().equals(user.getId())) {
+            return true;
+        }
+        return enrollmentRepository.existsByUserIdAndCourseId(user.getId(), course.getId());
+    }
+
     private String generateSlug(String title) {
         String base = title.toLowerCase()
                 .replaceAll("[^a-z0-9\\s-]", "")
@@ -197,6 +222,22 @@ public class CourseService {
                 .build();
     }
 
+    private CourseResponse toPublicDetailResponse(Course course) {
+        return CourseResponse.builder()
+                .id(course.getId())
+                .title(course.getTitle())
+                .slug(course.getSlug())
+                .description(course.getDescription())
+                .price(course.getPrice())
+                .currency(course.getCurrency())
+                .thumbnailUrl(course.getThumbnailUrl())
+                .published(course.isPublished())
+                .instructorName(course.getInstructor().getFullName())
+                .modules(course.getModules().stream().map(this::toPublicModuleResponse).toList())
+                .createdAt(course.getCreatedAt())
+                .build();
+    }
+
     private ModuleResponse toModuleResponse(Module module) {
         return ModuleResponse.builder()
                 .id(module.getId())
@@ -212,6 +253,25 @@ public class CourseService {
                 .title(lesson.getTitle())
                 .type(lesson.getType())
                 .videoUrl(lesson.getVideoUrl())
+                .durationSecs(lesson.getDurationSecs())
+                .sortOrder(lesson.getSortOrder())
+                .build();
+    }
+
+    private ModuleResponse toPublicModuleResponse(Module module) {
+        return ModuleResponse.builder()
+                .id(module.getId())
+                .title(module.getTitle())
+                .sortOrder(module.getSortOrder())
+                .lessons(module.getLessons().stream().map(this::toPublicLessonResponse).toList())
+                .build();
+    }
+
+    private LessonResponse toPublicLessonResponse(Lesson lesson) {
+        return LessonResponse.builder()
+                .id(lesson.getId())
+                .title(lesson.getTitle())
+                .type(lesson.getType())
                 .durationSecs(lesson.getDurationSecs())
                 .sortOrder(lesson.getSortOrder())
                 .build();
