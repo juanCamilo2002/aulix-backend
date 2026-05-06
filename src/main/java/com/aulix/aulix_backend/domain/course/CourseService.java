@@ -145,13 +145,11 @@ public class CourseService {
                 .orElseThrow(() -> AulixException.notFound("Curso no encontrado"));
 
         User current = getCurrentUser();
-        if (current.getRole() == Role.ADMIN) {
+        if (canManageCourse(current, course)) {
             return course;
         }
-        if (!course.getInstructor().getId().equals(current.getId())) {
-            throw AulixException.forbidden("No tienes permiso para modificar este curso");
-        }
-        return course;
+
+        throw AulixException.forbidden("No tienes permiso para modificar este curso");
     }
 
     private Module findModule(UUID moduleId) {
@@ -167,13 +165,20 @@ public class CourseService {
     }
 
     private boolean canAccessCourseContent(User user, Course course) {
+        if (canManageCourse(user, course)) {
+            return true;
+        }
+        return enrollmentRepository.existsByUserIdAndCourseId(user.getId(), course.getId());
+    }
+
+    private boolean canManageCourse(User user, Course course) {
         if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPERADMIN) {
             return true;
         }
         if (course.getInstructor().getId().equals(user.getId())) {
             return true;
         }
-        return enrollmentRepository.existsByUserIdAndCourseId(user.getId(), course.getId());
+        return false;
     }
 
     private String generateSlug(String title) {

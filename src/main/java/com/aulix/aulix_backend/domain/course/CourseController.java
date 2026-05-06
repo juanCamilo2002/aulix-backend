@@ -37,21 +37,21 @@ public class CourseController {
 
     // Instructors and admins only
     @PostMapping
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> create(
             @Valid @RequestBody CreateCourseRequest request){
         return ResponseEntity.ok(ApiResponse.ok("Curso creado", courseService.createCourse(request)));
     }
 
     @PatchMapping("/{courseId}/publish")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ApiResponse<CourseResponse>> togglePublish(
             @PathVariable UUID courseId) {
         return ResponseEntity.ok(ApiResponse.ok(courseService.togglePublish(courseId)));
     }
 
     @PostMapping("/{courseId}/modules")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ApiResponse<ModuleResponse>> addModule(
             @PathVariable UUID courseId,
             @RequestBody String title) {
@@ -59,7 +59,7 @@ public class CourseController {
     }
 
     @PostMapping("/modules/{moduleId}/lessons")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ApiResponse<LessonResponse>> addLesson(
             @PathVariable UUID moduleId,
             @Valid @RequestBody CreateLessonRequest request) {
