@@ -13,12 +13,16 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class TenantInterceptor implements HandlerInterceptor {
 
     private final TenantResolver tenantResolver;
+    private final TenantValidator tenantValidator;
 
     @Override
     public boolean preHandle(HttpServletRequest request,
-                              HttpServletResponse response,
-                              Object handler) {
+                               HttpServletResponse response,
+                               Object handler) {
+        TenantContext.clear();
+
         String slug = tenantResolver.resolveTenant(request);
+        tenantValidator.requireActiveTenant(slug);
 
         TenantContext.setTenant(slug);
         log.debug("Tenant resuelto: {} para host: {}", slug, request.getServerName());

@@ -3,6 +3,7 @@ package com.aulix.aulix_backend.security;
 import com.aulix.aulix_backend.security.auth.AuthService;
 import com.aulix.aulix_backend.tenant.TenantContext;
 import com.aulix.aulix_backend.tenant.TenantResolver;
+import com.aulix.aulix_backend.tenant.TenantValidator;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -29,6 +30,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final AuthService authService;
     private final TenantResolver tenantResolver;
+    private final TenantValidator tenantValidator;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
@@ -52,6 +54,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String username = jwtService.extractUsername(token);
             String tenantSlug = jwtService.extractTenantSlug(token);
             String requestTenant = tenantResolver.resolveTenant(request);
+            tenantValidator.requireActiveTenant(requestTenant);
 
             if (!requestTenant.equals(tenantSlug)) {
                 log.warn("Tenant JWT no coincide con request: token={}, request={}", tenantSlug, requestTenant);

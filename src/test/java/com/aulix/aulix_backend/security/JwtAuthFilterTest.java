@@ -4,6 +4,7 @@ import com.aulix.aulix_backend.domain.user.Role;
 import com.aulix.aulix_backend.domain.user.User;
 import com.aulix.aulix_backend.security.auth.AuthService;
 import com.aulix.aulix_backend.tenant.TenantResolver;
+import com.aulix.aulix_backend.tenant.TenantValidator;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ class JwtAuthFilterTest {
     private JwtService jwtService;
     private AuthService authService;
     private TenantResolver tenantResolver;
+    private TenantValidator tenantValidator;
     private JwtAuthFilter filter;
 
     @BeforeEach
@@ -28,7 +30,8 @@ class JwtAuthFilterTest {
         jwtService = mock(JwtService.class);
         authService = mock(AuthService.class);
         tenantResolver = mock(TenantResolver.class);
-        filter = new JwtAuthFilter(jwtService, authService, tenantResolver);
+        tenantValidator = mock(TenantValidator.class);
+        filter = new JwtAuthFilter(jwtService, authService, tenantResolver, tenantValidator);
         SecurityContextHolder.clearContext();
     }
 
@@ -58,6 +61,7 @@ class JwtAuthFilterTest {
 
         filter.doFilter(request, response, new MockFilterChain());
 
+        verify(tenantValidator).requireActiveTenant("acme");
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
         assertThat(SecurityContextHolder.getContext().getAuthentication().getName())
                 .isEqualTo("student@example.com");
