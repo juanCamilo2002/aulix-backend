@@ -54,8 +54,8 @@ public class CourseController {
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN', 'SUPERADMIN')")
     public ResponseEntity<ApiResponse<ModuleResponse>> addModule(
             @PathVariable UUID courseId,
-            @RequestBody String title) {
-        return ResponseEntity.ok(ApiResponse.ok("Módulo agregado", courseService.addModule(courseId, title)));
+            @Valid @RequestBody AddModuleRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Módulo agregado", courseService.addModule(courseId, request)));
     }
 
     @PostMapping("/modules/{moduleId}/lessons")

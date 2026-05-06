@@ -71,10 +71,11 @@ public class CourseService {
         String slug = generateSlug(request.getTitle());
 
         Course course = Course.builder()
-                .title(request.getTitle())
+                .title(request.getTitle().trim())
                 .slug(slug)
-                .description(request.getDescription())
+                .description(request.getDescription() != null ? request.getDescription().trim() : null)
                 .price(request.getPrice() != null ? request.getPrice() : BigDecimal.ZERO)
+                .currency(request.getCurrency() != null ? request.getCurrency() : "USD")
                 .thumbnailUrl(request.getThumbnailUrl())
                 .instructor(instructor)
                 .build();
@@ -96,14 +97,14 @@ public class CourseService {
     //  Add module
 
     @Transactional
-    public ModuleResponse addModule(UUID courseId, String title) {
+    public ModuleResponse addModule(UUID courseId, AddModuleRequest request) {
         Course course = findCourseAndCheckOwnership(courseId);
 
         int nextOrder = course.getModules().size();
 
         Module module = Module.builder()
                 .course(course)
-                .title(title)
+                .title(request.getTitle().trim())
                 .sortOrder(nextOrder)
                 .build();
 
@@ -124,7 +125,7 @@ public class CourseService {
 
         Lesson lesson = Lesson.builder()
                 .module(module)
-                .title(request.getTitle())
+                .title(request.getTitle().trim())
                 .type(request.getType() != null ? request.getType() : LessonType.VIDEO)
                 .videoUrl(request.getVideoUrl())
                 .contentMd(request.getContentMd())
