@@ -29,16 +29,16 @@ public class CourseService {
 
     //  List published courses
     @Transactional(readOnly = true)
-    public List<CourseResponse> getPublishedCourses() {
+    public List<PublicCourseResponse> getPublishedCourses() {
         return courseRepository.findPublishedWithInstructor()
                 .stream()
-                .map(this::toResponse)
+                .map(this::toPublicSummaryResponse)
                 .toList();
     }
 
     //  Get course by slug
     @Transactional(readOnly = true)
-    public CourseResponse getCourseBySlug(String slug) {
+    public PublicCourseResponse getCourseBySlug(String slug) {
         Course course = courseRepository.findBySlug(slug)
                 .orElseThrow(() -> AulixException.notFound("Curso no encontrado: " + slug));
 
@@ -222,8 +222,23 @@ public class CourseService {
                 .build();
     }
 
-    private CourseResponse toPublicDetailResponse(Course course) {
-        return CourseResponse.builder()
+    private PublicCourseResponse toPublicSummaryResponse(Course course) {
+        return PublicCourseResponse.builder()
+                .id(course.getId())
+                .title(course.getTitle())
+                .slug(course.getSlug())
+                .description(course.getDescription())
+                .price(course.getPrice())
+                .currency(course.getCurrency())
+                .thumbnailUrl(course.getThumbnailUrl())
+                .published(course.isPublished())
+                .instructorName(course.getInstructor().getFullName())
+                .createdAt(course.getCreatedAt())
+                .build();
+    }
+
+    private PublicCourseResponse toPublicDetailResponse(Course course) {
+        return PublicCourseResponse.builder()
                 .id(course.getId())
                 .title(course.getTitle())
                 .slug(course.getSlug())
@@ -258,8 +273,8 @@ public class CourseService {
                 .build();
     }
 
-    private ModuleResponse toPublicModuleResponse(Module module) {
-        return ModuleResponse.builder()
+    private PublicModuleResponse toPublicModuleResponse(Module module) {
+        return PublicModuleResponse.builder()
                 .id(module.getId())
                 .title(module.getTitle())
                 .sortOrder(module.getSortOrder())
@@ -267,8 +282,8 @@ public class CourseService {
                 .build();
     }
 
-    private LessonResponse toPublicLessonResponse(Lesson lesson) {
-        return LessonResponse.builder()
+    private PublicLessonResponse toPublicLessonResponse(Lesson lesson) {
+        return PublicLessonResponse.builder()
                 .id(lesson.getId())
                 .title(lesson.getTitle())
                 .type(lesson.getType())

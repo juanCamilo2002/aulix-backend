@@ -1,6 +1,7 @@
 package com.aulix.aulix_backend.domain.course;
 
 import com.aulix.aulix_backend.domain.enrollment.EnrollmentRepository;
+import com.aulix.aulix_backend.domain.course.dto.PublicLessonResponse;
 import com.aulix.aulix_backend.domain.user.User;
 import com.aulix.aulix_backend.domain.user.UserRepository;
 import com.aulix.aulix_backend.shared.exception.AulixException;
@@ -93,7 +94,8 @@ class CourseServiceTest {
 
         assertThat(response.getModules()).hasSize(1);
         assertThat(response.getModules().getFirst().getLessons()).hasSize(1);
-        assertThat(response.getModules().getFirst().getLessons().getFirst().getVideoUrl()).isNull();
+        assertThat(response.getModules().getFirst().getLessons().getFirst())
+                .isInstanceOf(PublicLessonResponse.class);
     }
 
     @Test

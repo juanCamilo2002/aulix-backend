@@ -20,12 +20,12 @@ public class CourseController {
 
     // Public - Anyone can view published courses
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CourseResponse>>> getPublished() {
+    public ResponseEntity<ApiResponse<List<PublicCourseResponse>>> getPublished() {
         return ResponseEntity.ok(ApiResponse.ok(courseService.getPublishedCourses()));
     }
 
     @GetMapping("/{slug}")
-    public ResponseEntity<ApiResponse<CourseResponse>> getBySlug(@PathVariable String slug) {
+    public ResponseEntity<ApiResponse<PublicCourseResponse>> getBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(ApiResponse.ok(courseService.getCourseBySlug(slug)));
     }
 
